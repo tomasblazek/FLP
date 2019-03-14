@@ -1,7 +1,9 @@
 FILENAME = simplify-bkg
 ARCHIVENAME = flp-fun-xblaze31
 
-all:
+all: build
+
+build:
 	ghc --make $(FILENAME).hs
 
 run:
