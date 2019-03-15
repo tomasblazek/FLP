@@ -6,22 +6,6 @@ import Data.List
 import qualified Data.Set as Set
 
 
-
-gramar = ["A,B,S","a,b","S","A->AB","B->b","S->A","S->a"]
-
-gramar2 = ["B,S","a,b","S","B->b","S->a"]
-
-
-gramarNonTerms = ['A','B','S']
-gramarTerms = ['a','b']
-gramarRules = [('A',"AB"),('B',"b"),('S',"A"),('S',"a")]
-
-gramarNonTerms2 = ['A','B','S', 'D']
-gramarRules2 = [('A',"AB"),('B',"b"),('S',"A"),('S',"a"), ('A',"D"), ('D',"A")]
-
-
-
-
 main :: IO()
 main = do
     argv <- getArgs
