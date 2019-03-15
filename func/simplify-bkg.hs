@@ -1,37 +1,36 @@
 import System.IO
 import System.Environment
 import System.Exit
-import Control.Monad
---import Data.List.Split
 
-import Debug.Trace
+import Data.List
+import qualified Data.Set as Set
+
 
 main :: IO()
 main = do
     argv <- getArgs
-    when (not (isArgsValid argv)) $ error "Invalid Arguments!"
-    let file = (getFile (argv))
-    input <- getInput (file)
-    mapM_ print (parseByLines $ grammarAlgorithm1 $ parseByLines input)
+    let file = getFileAndValidate argv
+    input <- getInput file
+    let output = process (head argv) (parseByLines input)
+    putStr $ grammarToString output
 
 
-parseByLines :: String -> [String]
-parseByLines input = lines (input)
 
-
-isArgsValid :: [String] -> Bool
-isArgsValid ["-i"] = True
-isArgsValid ["-i", file] = True
-isArgsValid ["-1"] = True
-isArgsValid ["-1", file] = True
-isArgsValid ["-2"] = True
-isArgsValid ["-2", file] = True
-isArgsValid others = False
+isArgsValid :: [String] -> Bool 
+isArgsValid ["-i"] = True 
+isArgsValid ["-i", file] = True 
+isArgsValid ["-1"] = True 
+isArgsValid ["-1", file] = True 
+isArgsValid ["-2"] = True 
+isArgsValid ["-2", file] = True 
+isArgsValid others = False 
 
 
 getFile :: [String] -> String
-getFile [ _ , file] = file
-getFile others = ""
+getFile [] = ""
+getFile (x:file)
+        | not (elem x ["-i", "-1", "-2"]) = x
+        | otherwise = getFile file
 
 
 getInput :: String -> IO String
@@ -39,71 +38,102 @@ getInput "" = getContents
 getInput file = readFile (file)
 
 
-
--- main :: IO()
--- main = do
---   --  args <- parseArgs (getArgs);
---     getArgs >>= argParse >>= putStr . tac
-
--- tac = unlines . reverse . lines
-
--- argParse :: [String] -> Either String Con
--- argParse [ ] = error "Invalid arguments!"
--- argParse [ x ]  = argError >> exitFail
--- argParse ["-h"] = usage >> exitSucc
+getFileAndValidate :: [String] -> String
+getFileAndValidate args 
+                    | isArgsValid args = getFile args
+                    | otherwise = error "Error: Invalid program arguments!"
 
 
--- usage = putStrLn "Usage: tac [-vh] [file ..]"
--- argError = putStrLn "Invalid arguments!"
-
--- exitSucc = exitWith ExitSuccess
--- exitFail = exitWith (ExitFailure 1)
+type Nonterminal = Char
+type Terminal = Char
+type Rule = (Nonterminal,String)
 
 
---parseArgs :: [String] -> String
---parseArgs [] = error "Nothing to be done"
+data Grammar = Grammar{
+    grammarNonterminals::Set.Set Nonterminal,
+    grammarTerminals::Set.Set Terminal,
+    grammarOrigin::Nonterminal,
+    grammarRules::Set.Set Rule
+}
 
 
--- faktorial :: Integer -> Integer
--- faktorial 0 = 1
--- faktorial n = product[1..n]
+instance Show Grammar where
+    show (Grammar grammarNonterminals grammarTerminals grammarOrigin grammarRules) = 
+        "Nonterminals:\n" ++ show grammarNonterminals ++ "\n" ++
+        "Terminals:\n" ++ show grammarTerminals ++ "\n" ++
+        "Origin:\n" ++ show grammarOrigin ++ "\n" ++
+        "Rules:\n" ++ show grammarRules ++ "\n"
 
 
-
--- main = do
---     putStrLn "Hello, what's your name?"  
---     x <- getLine  
---     putStrLn ("Hey " ++ x ++ ", you rock!")
---     args
-
-
+process :: String -> [String] -> Grammar
+process arg input
+            | "-i" == arg = parseGrammar input
+            | "-1" == arg = grammarAlgorithm1 $ parseGrammar input
+            | "-2" == arg = grammarAlgorithm2 $ grammarAlgorithm1 $ parseGrammar input
+            | otherwise = error "Error: Invalid parameter in process!"
 
 
-gramar = ["A,B,S","a,b","S","A->AB","B->b","S->A","S->a"]
+parseGrammar :: [String] -> Grammar
+parseGrammar (inNonteminals:inTerminals:inOrigin:inRules) = Grammar{
+            grammarNonterminals = nonterminals,
+            grammarTerminals = terminals,
+            grammarOrigin = origin,
+            grammarRules = rules
+        }
+        where
+            nonterminals = makeSetFromList (getArrayNonterminals ( inNonteminals ))
+            terminals = makeSetFromList (getArrayTerminals ( inTerminals ))
+            origin = getOriginNonterminal ( inOrigin )
+            rules =  makeSetFromList $ parseRules (inRules)
 
-gramarNonTerms = ['A','B','S']
-gramarTerms = ['a','b']
-gramarRules = [('A',"AB"),('B',"b"),('S',"A"),('S',"a")]
-
-gramarNonTerms2 = ['A','B','S', 'D']
-gramarRules2 = [('A',"AB"),('B',"b"),('S',"A"),('S',"a"), ('A',"D"), ('D',"A")]
+parseByLines :: String -> [String]
+parseByLines input = lines (input)
 
 
-grammarAlgorithm1 :: [String] -> String
-grammarAlgorithm1 grammar = do
-                            let nonterminals = getArrayNonterminals ( head grammar )
-                            let terminals = getArrayTerminals ( head $ drop 1 grammar )
-                            let startNonterminal = getArrayNonterminals ( head $ drop 2 grammar )
-                            let rules =  parseRules (drop 3 grammar)
-                            let nt = makeSetNt nonterminals terminals rules [] 
-                            charArrToStringWithCommas nt ++ charArrToStringWithCommas terminals ++ charArrToStringWithCommas startNonterminal ++ arrayOfStringsToString ( rulesToArrayOfStrings rules )
+grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal -> Set.Set Rule -> String
+grammarToStringByElems inNonteminals inTerminals inOrigin inRules = nonterminals ++ terminals ++ origin ++ rules 
+            where
+                nonterminals = charArrToStringWithCommas (Set.toList $ inNonteminals)
+                terminals = charArrToStringWithCommas (Set.toList $ inTerminals)
+                origin = inOrigin:"\n"
+                rules = listOfStringsToString $ rulesToArrayOfStrings inRules
 
-arrayOfStringsToString :: [String] -> String
-arrayOfStringsToString [] = ""
-arrayOfStringsToString (x:xs) = x ++ arrayOfStringsToString xs
 
-rulesToArrayOfStrings :: [(Char, String)] -> [String]
-rulesToArrayOfStrings rules = [ [left] ++ "->" ++ right ++ "\n" | (left, right) <- rules]
+grammarToString :: Grammar -> String
+grammarToString grammar = grammarToStringByElems nonterminals terminals origin rules
+        where
+            nonterminals = grammarNonterminals grammar
+            terminals = grammarTerminals grammar
+            origin = grammarOrigin grammar
+            rules =  grammarRules grammar
+
+
+-- nt is Nt set from TIN arlgorithm 4.1
+grammarAlgorithm1 :: Grammar -> Grammar
+grammarAlgorithm1 grammar = Grammar{
+            grammarNonterminals = nt,
+            grammarTerminals = terminals,
+            grammarOrigin = origin,
+            grammarRules = filtredRules
+        }
+        where
+            terminals = grammarTerminals grammar
+            origin = grammarOrigin grammar
+            rules =  grammarRules grammar
+            nt = makeSetNt terminals rules Set.empty
+            filtredRules = filterRulesBySymbols (Set.union nt terminals) rules
+
+
+filterRulesBySymbols :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Rule
+filterRulesBySymbols keys rules = makeSetFromList $ [ (left,right) | (left,right) <- Set.toList rules, elem left (Set.toList keys), checkElems right (Set.toList keys)]
+
+
+listOfStringsToString :: [String] -> String
+listOfStringsToString [] = ""
+listOfStringsToString (x:xs) = x ++ listOfStringsToString xs
+
+rulesToArrayOfStrings :: Set.Set Rule -> [String]
+rulesToArrayOfStrings rules = [ [left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
 
 charArrToStringWithCommas :: [Char] -> String
 charArrToStringWithCommas [] = []
@@ -111,12 +141,12 @@ charArrToStringWithCommas [x] = [x] ++ "\n"
 charArrToStringWithCommas (x:xs) = [x] ++ "," ++  charArrToStringWithCommas xs
 
 
-makeSetNt :: [Char]->[Char]->[(Char, String)]->[Char]->[Char]
-makeSetNt nonterminals terminals rules nt = do
-                            let ntNew = [ nonterminal | (nonterminal, right) <- rules, checkElems right (terminals ++ nt)]
-                            if nt == ntNew
-                                then ntNew
-                                else makeSetNt nonterminals terminals rules ntNew
+makeSetNt :: Set.Set Terminal->Set.Set Rule->Set.Set Nonterminal->Set.Set Nonterminal
+makeSetNt terminals rules ntOld = do
+                            let nt = [ nonterminal | (nonterminal, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld))]
+                            if ntOld == makeSetFromList nt
+                                then makeSetFromList nt
+                                else makeSetNt terminals rules (makeSetFromList nt)
 
 -- Check if elems of set are in other set
 checkElems :: [Char] -> [Char] -> Bool
@@ -129,7 +159,11 @@ getArrayNonterminals nonterminals = [ nonterminal | nonterminal <- nonterminals 
 getArrayTerminals :: String -> [Char]
 getArrayTerminals terminals = [ terminal | terminal <- terminals , elem terminal ['a'..'z'] ]
 
-parseRules :: [String] -> [(Char, String)]
+getOriginNonterminal :: String -> Nonterminal
+getOriginNonterminal "" = error "Invalid Origin" 
+getOriginNonterminal origin =  head origin
+
+parseRules :: [String] -> [Rule]
 parseRules rules = [parseRule rule | rule <- rules]
 
 parseRule :: String -> (Char,String)
@@ -140,3 +174,58 @@ parseLeft rule = head rule
 
 parseRight :: String -> String
 parseRight rule = drop 3 rule
+
+
+makeSetFromList :: (Ord a) => [a] -> Set.Set a
+makeSetFromList [] = Set.empty
+makeSetFromList (x:xs) = Set.insert x (makeSetFromList xs)
+
+
+
+--vi is Vi set from TIN arlgorithm 4.2
+grammarAlgorithm2 :: Grammar -> Grammar
+grammarAlgorithm2 grammar = Grammar{
+            grammarNonterminals = Set.intersection vi nonterminals,
+            grammarTerminals = Set.intersection vi terminals,
+            grammarOrigin = origin,
+            grammarRules = filtredRules
+        }
+        where
+            nonterminals = grammarNonterminals grammar
+            terminals = grammarTerminals grammar
+            origin = grammarOrigin grammar
+            rules =  grammarRules grammar
+            vi = makeSetVi (makeSetFromList [origin]) rules
+            filtredRules = filterRulesBySymbols vi rules
+
+
+makeSetVi :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Char
+makeSetVi viOld rules = do
+                        let vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
+                        if viOld == vi
+                            then vi
+                            else makeSetVi vi rules
+
+
+iterateByViElemsToMakeVi :: [Char] -> [Rule]  -> Set.Set Char
+iterateByViElemsToMakeVi [] rules = Set.empty
+iterateByViElemsToMakeVi (viElem:rest) rules = Set.union (iterateByRulesToMakeVi viElem rules) (iterateByViElemsToMakeVi rest rules)
+
+
+iterateByRulesToMakeVi :: Char -> [Rule]  -> Set.Set Char
+iterateByRulesToMakeVi viElem [] = Set.empty
+iterateByRulesToMakeVi viElem (rule:rest) = Set.union (addElemsToVi Set.empty viElem rule) (iterateByRulesToMakeVi viElem rest)
+
+
+addElemsToVi :: Set.Set Char -> Char -> Rule -> Set.Set Char
+addElemsToVi vi viElem (left, right) = do
+                                if viElem == left
+                                   then Set.union vi (insertStringToSetByChars right)
+                                   else vi
+
+
+insertStringToSetByChars :: String -> Set.Set Char
+insertStringToSetByChars [] = Set.empty
+insertStringToSetByChars (x:xs) = Set.insert x (insertStringToSetByChars xs)
+
+
