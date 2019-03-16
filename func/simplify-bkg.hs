@@ -232,7 +232,7 @@ makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules
 
 isLanguageNotEmpty :: Nonterminal -> Set.Set Nonterminal -> Bool
 isLanguageNotEmpty origin nonterminals
-                            | elem origin nonterminals = True
+                            | Set.member origin nonterminals = True
                             | otherwise = False 
 
 -- Check if elems of set are in other set
