@@ -190,9 +190,10 @@ grammarAlgorithm1 grammar = Grammar{
         }
         where
             terminals = grammarTerminals grammar
+            nonterminals = grammarNonterminals grammar
             origin = grammarOrigin grammar
             rules =  grammarRules grammar
-            nt = makeSetNt terminals rules Set.empty
+            nt = makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules
             filtredRules = filterRulesBySymbols (Set.union nt terminals) rules
 
 
@@ -218,7 +219,21 @@ makeSetNt terminals rules ntOld
                     | ntOld == nt = nt
                     | otherwise = makeSetNt terminals rules nt
                     where
-                        nt = Set.fromList [ nonterminal | (nonterminal, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld))]
+                        nt = Set.fromList [ left | (left, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld)) || right == "#"]
+
+
+makeSetNtAndValidateLanguageEmptiness :: Nonterminal -> Set.Set Nonterminal -> Set.Set Terminal -> Set.Set Rule -> Set.Set Nonterminal
+makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules
+                    | isLanguageNotEmpty origin nt = nt
+                    | otherwise = error "Grammar generates empty language!"
+                    where 
+                        nt = makeSetNt terminals rules Set.empty 
+
+
+isLanguageNotEmpty :: Nonterminal -> Set.Set Nonterminal -> Bool
+isLanguageNotEmpty origin nonterminals
+                            | elem origin nonterminals = True
+                            | otherwise = False 
 
 -- Check if elems of set are in other set
 checkElems :: [Char] -> [Char] -> Bool
