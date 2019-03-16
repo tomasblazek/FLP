@@ -173,7 +173,7 @@ parseRuleLeft rule nonterminals
 
 parseRuleRight :: String -> Set.Set Nonterminal -> Set.Set Terminal -> String
 parseRuleRight rule nonterminals terminals 
-            | length ruleSplit == 2 && checkElems right ((Set.toList nonterminals) ++ (Set.toList terminals)) = right
+            | length ruleSplit == 2 && (checkElems right ((Set.toList nonterminals) ++ (Set.toList terminals)) || right == "#") = right
             | otherwise = error ("Error: Invalid right side of rule " ++ show rule)
             where 
                 ruleSplit = splitOn "->" rule
@@ -197,7 +197,7 @@ grammarAlgorithm1 grammar = Grammar{
 
 
 filterRulesBySymbols :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Rule
-filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules, Set.member left keys, checkElems right (Set.toList keys)]
+filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules, Set.member left keys, checkElems right (Set.toList keys) || right == "#"]
 
 
 listOfStringsToString :: [String] -> String
@@ -262,10 +262,9 @@ iterateByRulesToMakeVi viElem (rule:rest) = Set.union (addElemsToVi Set.empty vi
 
 
 addElemsToVi :: Set.Set Char -> Char -> Rule -> Set.Set Char
-addElemsToVi vi viElem (left, right) = do
-                                if viElem == left
-                                   then Set.union vi (insertStringToSetByChars right)
-                                   else vi
+addElemsToVi vi viElem (left, right)
+                            | viElem == left = Set.union vi (insertStringToSetByChars right)
+                            | otherwise = vi
 
 
 insertStringToSetByChars :: String -> Set.Set Char
