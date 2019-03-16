@@ -2,7 +2,8 @@ import System.IO
 import System.Environment
 import System.Exit
 
-import Data.List
+import Data.Char
+import Data.List.Split
 import qualified Data.Set as Set
 
 
@@ -81,10 +82,10 @@ parseGrammar (inNonteminals:inTerminals:inOrigin:inRules) = Grammar{
             grammarRules = rules
         }
         where
-            nonterminals = makeSetFromList (getArrayNonterminals ( inNonteminals ))
-            terminals = makeSetFromList (getArrayTerminals ( inTerminals ))
-            origin = getOriginNonterminal ( inOrigin )
-            rules =  makeSetFromList $ parseRules (inRules)
+            nonterminals = getArrayNonterminals inNonteminals 
+            terminals = getArrayTerminals inTerminals
+            origin = getOriginNonterminal inOrigin nonterminals
+            rules = parseRules inRules nonterminals terminals
 
 parseByLines :: String -> [String]
 parseByLines input = lines (input)
@@ -107,6 +108,77 @@ grammarToString grammar = grammarToStringByElems nonterminals terminals origin r
             origin = grammarOrigin grammar
             rules =  grammarRules grammar
 
+getArrayNonterminals :: String -> Set.Set Nonterminal
+getArrayNonterminals input
+                | validateNonterminals nonterminals && (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString = Set.fromList nonterminalsString
+                | otherwise = error "Error: Invalid nonterminals!" 
+                where
+                    nonterminals = splitOn "," input
+                    nonterminalsString = listOfStringsToString nonterminals
+
+
+isChar :: String -> Bool
+isChar (char:[]) = True
+isChar str = False 
+
+toChar :: String -> Char
+toChar (char:[]) = char
+
+validateNonterminals :: [String] -> Bool
+validateNonterminals [] = True
+validateNonterminals (nonterminal:rest) 
+                    | isChar nonterminal && elem (toChar nonterminal) ['A'..'Z'] = validateNonterminals rest
+                    | otherwise = False
+
+
+getArrayTerminals :: String -> Set.Set Terminal
+getArrayTerminals input
+                | validateTerminals terminals && (Set.size (Set.fromList terminalsString)) == length terminalsString = Set.fromList terminalsString
+                | otherwise = error "Error: Invalid terminals!" 
+                where
+                    terminals = splitOn "," input
+                    terminalsString = listOfStringsToString terminals
+
+
+validateTerminals :: [String] -> Bool
+validateTerminals [] = True
+validateTerminals (terminal:rest) 
+                    | isChar terminal && elem (toChar terminal) ['a'..'z'] = validateTerminals rest
+                    | otherwise = False
+
+
+getOriginNonterminal :: String -> Set.Set Nonterminal-> Nonterminal
+getOriginNonterminal "" _ = error "Error: Missing Origin" 
+getOriginNonterminal (origin:[]) nonterminals
+                            | Set.member origin nonterminals = origin
+                            | otherwise = error "Error: Given origin is not in defined nonterminal set!" 
+getOriginNonterminal other _ = error "Error: Invalid Origin" 
+
+
+parseRules :: [String] -> Set.Set Nonterminal -> Set.Set Terminal -> Set.Set Rule
+parseRules rules nonterminals terminals = Set.fromList [parseRule rule nonterminals terminals | rule <- rules]
+
+
+parseRule :: String -> Set.Set Nonterminal -> Set.Set Terminal -> Rule
+parseRule rule nonterminals terminals = (parseRuleLeft rule nonterminals, parseRuleRight rule nonterminals terminals)
+
+parseRuleLeft :: String -> Set.Set Nonterminal -> Char
+parseRuleLeft rule nonterminals
+            | isChar left && Set.member leftChar nonterminals = leftChar
+            | otherwise = error ("Error: Invalid left side of rule " ++ show rule)
+            where 
+                left = head (splitOn "->" rule)
+                leftChar = toChar left
+
+
+parseRuleRight :: String -> Set.Set Nonterminal -> Set.Set Terminal -> String
+parseRuleRight rule nonterminals terminals 
+            | length ruleSplit == 2 && checkElems right ((Set.toList nonterminals) ++ (Set.toList terminals)) = right
+            | otherwise = error ("Error: Invalid right side of rule " ++ show rule)
+            where 
+                ruleSplit = splitOn "->" rule
+                right = ruleSplit !! 1
+
 
 -- nt is Nt set from TIN arlgorithm 4.1
 grammarAlgorithm1 :: Grammar -> Grammar
@@ -125,7 +197,7 @@ grammarAlgorithm1 grammar = Grammar{
 
 
 filterRulesBySymbols :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Rule
-filterRulesBySymbols keys rules = makeSetFromList $ [ (left,right) | (left,right) <- Set.toList rules, elem left (Set.toList keys), checkElems right (Set.toList keys)]
+filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules, Set.member left keys, checkElems right (Set.toList keys)]
 
 
 listOfStringsToString :: [String] -> String
@@ -142,43 +214,16 @@ charArrToStringWithCommas (x:xs) = [x] ++ "," ++  charArrToStringWithCommas xs
 
 
 makeSetNt :: Set.Set Terminal->Set.Set Rule->Set.Set Nonterminal->Set.Set Nonterminal
-makeSetNt terminals rules ntOld = do
-                            let nt = [ nonterminal | (nonterminal, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld))]
-                            if ntOld == makeSetFromList nt
-                                then makeSetFromList nt
-                                else makeSetNt terminals rules (makeSetFromList nt)
+makeSetNt terminals rules ntOld 
+                    | ntOld == nt = nt
+                    | otherwise = makeSetNt terminals rules nt
+                    where
+                        nt = Set.fromList [ nonterminal | (nonterminal, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld))]
 
 -- Check if elems of set are in other set
 checkElems :: [Char] -> [Char] -> Bool
 checkElems [] x = True
 checkElems (x:xs) yList = (elem x yList) && ( checkElems xs yList)
-
-getArrayNonterminals :: String -> [Char]
-getArrayNonterminals nonterminals = [ nonterminal | nonterminal <- nonterminals , elem nonterminal ['A'..'Z'] ]
-
-getArrayTerminals :: String -> [Char]
-getArrayTerminals terminals = [ terminal | terminal <- terminals , elem terminal ['a'..'z'] ]
-
-getOriginNonterminal :: String -> Nonterminal
-getOriginNonterminal "" = error "Invalid Origin" 
-getOriginNonterminal origin =  head origin
-
-parseRules :: [String] -> [Rule]
-parseRules rules = [parseRule rule | rule <- rules]
-
-parseRule :: String -> (Char,String)
-parseRule rule = (parseLeft rule, parseRight rule)
-
-parseLeft :: String -> Char
-parseLeft rule = head rule
-
-parseRight :: String -> String
-parseRight rule = drop 3 rule
-
-
-makeSetFromList :: (Ord a) => [a] -> Set.Set a
-makeSetFromList [] = Set.empty
-makeSetFromList (x:xs) = Set.insert x (makeSetFromList xs)
 
 
 
@@ -195,17 +240,16 @@ grammarAlgorithm2 grammar = Grammar{
             terminals = grammarTerminals grammar
             origin = grammarOrigin grammar
             rules =  grammarRules grammar
-            vi = makeSetVi (makeSetFromList [origin]) rules
+            vi = makeSetVi (Set.fromList [origin]) rules
             filtredRules = filterRulesBySymbols vi rules
 
 
 makeSetVi :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Char
-makeSetVi viOld rules = do
-                        let vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
-                        if viOld == vi
-                            then vi
-                            else makeSetVi vi rules
-
+makeSetVi viOld rules 
+                | viOld == vi = vi 
+                | otherwise = makeSetVi vi rules
+                where 
+                    vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
 
 iterateByViElemsToMakeVi :: [Char] -> [Rule]  -> Set.Set Char
 iterateByViElemsToMakeVi [] rules = Set.empty
