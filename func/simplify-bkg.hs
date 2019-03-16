@@ -156,7 +156,12 @@ getOriginNonterminal other _ = error "Error: Invalid Origin"
 
 
 parseRules :: [String] -> Set.Set Nonterminal -> Set.Set Terminal -> Set.Set Rule
-parseRules rules nonterminals terminals = Set.fromList [parseRule rule nonterminals terminals | rule <- rules]
+parseRules rules nonterminals terminals 
+                | Set.size ruleSet == length ruleList = ruleSet
+                | otherwise = error "Error: Duplicity in rules!"
+                where
+                    ruleList = [parseRule rule nonterminals terminals | rule <- rules]
+                    ruleSet = Set.fromList ruleList
 
 
 parseRule :: String -> Set.Set Nonterminal -> Set.Set Terminal -> Rule
