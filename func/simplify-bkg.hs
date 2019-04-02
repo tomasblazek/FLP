@@ -96,8 +96,10 @@ parseByLines :: String -> [String]
 parseByLines input = lines (input)
 
 -- Get grammar string to print output format
-grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal -> Set.Set Rule -> String
-grammarToStringByElems inNonteminals inTerminals inOrigin inRules = nonterminals ++ terminals ++ origin ++ rules 
+grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal -> Set.Set Rule
+                            -> String
+grammarToStringByElems inNonteminals inTerminals inOrigin inRules 
+            = nonterminals ++ terminals ++ origin ++ rules 
             where
                 nonterminals = charArrToStringWithCommas (Set.toList $ inNonteminals)
                 terminals = charArrToStringWithCommas (Set.toList $ inTerminals)
@@ -116,7 +118,9 @@ grammarToString grammar = grammarToStringByElems nonterminals terminals origin r
 -- Get set of nontelminals from string and validate
 getArrayNonterminals :: String -> Set.Set Nonterminal
 getArrayNonterminals input
-    | validateNonterminals nonterminals && (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString = Set.fromList nonterminalsString
+    | validateNonterminals nonterminals &&
+    (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString 
+    = Set.fromList nonterminalsString
     | otherwise = error "Error: Invalid nonterminals!" 
     where
         nonterminals = splitOn "," input
@@ -135,13 +139,15 @@ toChar (char:[]) = char
 validateNonterminals :: [String] -> Bool
 validateNonterminals [] = True
 validateNonterminals (nonterminal:rest) 
-                    | isChar nonterminal && elem (toChar nonterminal) ['A'..'Z'] = validateNonterminals rest
-                    | otherwise = False
+        | isChar nonterminal && elem (toChar nonterminal) ['A'..'Z'] = validateNonterminals rest
+        | otherwise = False
 
 -- Get set of terminals from string and validate
 getArrayTerminals :: String -> Set.Set Terminal
 getArrayTerminals input
-    | validateTerminals terminals && (Set.size (Set.fromList terminalsString)) == length terminalsString = Set.fromList terminalsString
+    | validateTerminals terminals &&
+    (Set.size (Set.fromList terminalsString)) == length terminalsString 
+    = Set.fromList terminalsString
     | otherwise = error "Error: Invalid terminals!" 
     where
         terminals = splitOn "," input
@@ -158,8 +164,8 @@ validateTerminals (terminal:rest)
 getOriginNonterminal :: String -> Set.Set Nonterminal-> Nonterminal
 getOriginNonterminal "" _ = error "Error: Missing Origin" 
 getOriginNonterminal (origin:[]) nonterminals
-                            | Set.member origin nonterminals = origin
-                            | otherwise = error "Error: Given origin is not in defined nonterminal set!" 
+                    | Set.member origin nonterminals = origin
+                    | otherwise = error "Error: Given origin is not in defined nonterminal set!"
 getOriginNonterminal other _ = error "Error: Invalid Origin" 
 
 
@@ -174,7 +180,8 @@ parseRules rules nonterminals terminals
 
 -- Parse rule and create Rule type
 parseRule :: String -> Set.Set Nonterminal -> Set.Set Terminal -> Rule
-parseRule rule nonterminals terminals = (parseRuleLeft rule nonterminals, parseRuleRight rule nonterminals terminals)
+parseRule rule nonterminals terminals = 
+    (parseRuleLeft rule nonterminals, parseRuleRight rule nonterminals terminals)
 
 -- Parse left side of rule and validate
 parseRuleLeft :: String -> Set.Set Nonterminal -> Char
@@ -188,7 +195,8 @@ parseRuleLeft rule nonterminals
 -- Parse right side of rule and validate
 parseRuleRight :: String -> Set.Set Nonterminal -> Set.Set Terminal -> String
 parseRuleRight rule nonterminals terminals 
-    | length ruleSplit == 2 && (checkElems right ((Set.toList nonterminals) ++ (Set.toList terminals)) || right == "#") = right
+    | length ruleSplit == 2 && 
+    (checkElems right ((Set.toList nonterminals)++(Set.toList terminals)) || right == "#") = right
     | otherwise = error ("Error: Invalid right side of rule " ++ show rule)
     where 
         ruleSplit = splitOn "->" rule
@@ -208,12 +216,14 @@ grammarAlgorithm1 grammar = Grammar{
         nonterminals = grammarNonterminals grammar
         origin = grammarOrigin grammar
         rules =  grammarRules grammar
-        nt = makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules -- nt is Nt set from TIN arlgorithm 4.1
+        -- nt is Nt set from TIN arlgorithm 4.1
+        nt = makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules
         filtredRules = filterRulesBySymbols (Set.union nt terminals) rules
 
 -- Filter rules by nonterminals in key set
 filterRulesBySymbols :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Rule
-filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules, Set.member left keys, checkElems right (Set.toList keys) || right == "#"]
+filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules,
+                        Set.member left keys, checkElems right (Set.toList keys) || right == "#"]
 
 -- Concatenate list of strings to one string
 listOfStringsToString :: [String] -> String
@@ -222,7 +232,7 @@ listOfStringsToString (x:xs) = x ++ listOfStringsToString xs
 
 -- Get list of string from set of Rules
 rulesToArrayOfStrings :: Set.Set Rule -> [String]
-rulesToArrayOfStrings rules = [ [left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
+rulesToArrayOfStrings rules = [[left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
 
 -- Get string from list of chars delimited with commas
 charArrToStringWithCommas :: [Char] -> String
@@ -236,10 +246,13 @@ makeSetNt terminals rules ntOld
     | ntOld == nt = nt
     | otherwise = makeSetNt terminals rules nt
     where
-        nt = Set.fromList [ left | (left, right) <- Set.toList rules, checkElems right (Set.toList (Set.union terminals ntOld)) || right == "#"]
+        nt = Set.fromList [left | (left, right) <- Set.toList rules,
+         checkElems right (Set.toList (Set.union terminals ntOld)) || right == "#"]
 
--- Make Nt set and validate nonemptyness of generated language. If generated language is empty error is generated.
-makeSetNtAndValidateLanguageEmptiness :: Nonterminal -> Set.Set Nonterminal -> Set.Set Terminal -> Set.Set Rule -> Set.Set Nonterminal
+-- Make Nt set and validate nonemptyness of generated language. If generated language is empty 
+-- error is generated.
+makeSetNtAndValidateLanguageEmptiness :: Nonterminal -> Set.Set Nonterminal -> Set.Set Terminal 
+                                        -> Set.Set Rule -> Set.Set Nonterminal
 makeSetNtAndValidateLanguageEmptiness origin nonterminals terminals rules
                     | isLanguageNotEmpty origin nt = nt
                     | otherwise = error "Grammar generates empty language!"
@@ -278,20 +291,22 @@ grammarAlgorithm2 grammar = Grammar{
 -- Make Vi set from TIN arlgorithm 4.2
 makeSetVi :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Char
 makeSetVi viOld rules 
-                | viOld == vi = vi 
-                | otherwise = makeSetVi vi rules
-                where 
-                    vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
+        | viOld == vi = vi 
+        | otherwise = makeSetVi vi rules
+        where 
+            vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
 
 -- Iterate by Vi elements to add symbols to Vi set
 iterateByViElemsToMakeVi :: [Char] -> [Rule]  -> Set.Set Char
 iterateByViElemsToMakeVi [] rules = Set.empty
-iterateByViElemsToMakeVi (viElem:rest) rules = Set.union (iterateByRulesToMakeVi viElem rules) (iterateByViElemsToMakeVi rest rules)
+iterateByViElemsToMakeVi (viElem:rest) rules =
+    Set.union (iterateByRulesToMakeVi viElem rules) (iterateByViElemsToMakeVi rest rules)
 
 -- Iterate by given rules with Vi Set
 iterateByRulesToMakeVi :: Char -> [Rule]  -> Set.Set Char
 iterateByRulesToMakeVi viElem [] = Set.empty
-iterateByRulesToMakeVi viElem (rule:rest) = Set.union (addElemsToVi Set.empty viElem rule) (iterateByRulesToMakeVi viElem rest)
+iterateByRulesToMakeVi viElem (rule:rest) = 
+    Set.union (addElemsToVi Set.empty viElem rule) (iterateByRulesToMakeVi viElem rest)
 
 -- Add symbols to Vi set
 addElemsToVi :: Set.Set Char -> Char -> Rule -> Set.Set Char

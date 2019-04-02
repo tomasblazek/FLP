@@ -10,7 +10,7 @@ build:
 	ghc --make $(FILENAME).hs
 
 run:
-	./$(FILENAME)
+	./$(FILENAME) -2
 
 clean:
 	rm *.hi *.o $(FILENAME)
