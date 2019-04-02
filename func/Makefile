@@ -1,3 +1,6 @@
+# Název: simplify-bkg
+# Autor: Tomáš Blažek (xblaze31) 
+
 FILENAME = simplify-bkg
 ARCHIVENAME = flp-fun-xblaze31
 
