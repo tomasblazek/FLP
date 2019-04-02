@@ -98,8 +98,8 @@ parseByLines input = lines (input)
 -- Get grammar string to print output format
 grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal -> Set.Set Rule
                             -> String
-grammarToStringByElems inNonteminals inTerminals inOrigin inRules 
-            = nonterminals ++ terminals ++ origin ++ rules 
+grammarToStringByElems inNonteminals inTerminals inOrigin inRules = 
+            nonterminals ++ terminals ++ origin ++ rules 
             where
                 nonterminals = charArrToStringWithCommas (Set.toList $ inNonteminals)
                 terminals = charArrToStringWithCommas (Set.toList $ inTerminals)
@@ -118,8 +118,8 @@ grammarToString grammar = grammarToStringByElems nonterminals terminals origin r
 -- Get set of nontelminals from string and validate
 getArrayNonterminals :: String -> Set.Set Nonterminal
 getArrayNonterminals input
-    | validateNonterminals nonterminals &&
-    (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString 
+    | validateNonterminals nonterminals
+    && (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString 
     = Set.fromList nonterminalsString
     | otherwise = error "Error: Invalid nonterminals!" 
     where
@@ -145,8 +145,8 @@ validateNonterminals (nonterminal:rest)
 -- Get set of terminals from string and validate
 getArrayTerminals :: String -> Set.Set Terminal
 getArrayTerminals input
-    | validateTerminals terminals &&
-    (Set.size (Set.fromList terminalsString)) == length terminalsString 
+    | validateTerminals terminals
+    && (Set.size (Set.fromList terminalsString)) == length terminalsString 
     = Set.fromList terminalsString
     | otherwise = error "Error: Invalid terminals!" 
     where
@@ -195,8 +195,9 @@ parseRuleLeft rule nonterminals
 -- Parse right side of rule and validate
 parseRuleRight :: String -> Set.Set Nonterminal -> Set.Set Terminal -> String
 parseRuleRight rule nonterminals terminals 
-    | length ruleSplit == 2 && 
-    (checkElems right ((Set.toList nonterminals)++(Set.toList terminals)) || right == "#") = right
+    | length ruleSplit == 2 
+    && (checkElems right ((Set.toList nonterminals)++(Set.toList terminals)) || right == "#")
+    = right
     | otherwise = error ("Error: Invalid right side of rule " ++ show rule)
     where 
         ruleSplit = splitOn "->" rule
