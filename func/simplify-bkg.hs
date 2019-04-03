@@ -34,13 +34,13 @@ isArgsValid others = False
 getFile :: [String] -> String
 getFile [] = ""
 getFile (x:file)
-        | not (elem x ["-i", "-1", "-2"]) = x
+        | x `notElem` ["-i", "-1", "-2"] = x
         | otherwise = getFile file
 
 -- Get input from file or stdin
 getInput :: String -> IO String
 getInput "" = getContents
-getInput file = readFile (file)
+getInput file = readFile file
 
 -- Get file name and validate program arguments
 getFileAndValidate :: [String] -> String
@@ -100,7 +100,7 @@ parseByLinesAndValidate input
             | length inputLines >= 3 = inputLines
             | otherwise = error "Error: Invalid input format!"
             where
-                inputLines = lines (input)
+                inputLines = lines input
 
 
 -- Get grammar string to print output format
@@ -109,8 +109,8 @@ grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal
 grammarToStringByElems inNonteminals inTerminals inOrigin inRules = 
             nonterminals ++ terminals ++ origin ++ rules 
             where
-                nonterminals = charArrToStringWithCommas (Set.toList $ inNonteminals)
-                terminals = charArrToStringWithCommas (Set.toList $ inTerminals)
+                nonterminals = charArrToStringWithCommas (Set.toList inNonteminals)
+                terminals = charArrToStringWithCommas (Set.toList inTerminals)
                 origin = inOrigin:"\n"
                 rules = listOfStringsToString $ rulesToArrayOfStrings inRules
 
@@ -127,7 +127,7 @@ grammarToString grammar = grammarToStringByElems nonterminals terminals origin r
 getArrayNonterminals :: String -> Set.Set Nonterminal
 getArrayNonterminals input
     | validateNonterminals nonterminals
-    && (Set.size (Set.fromList nonterminalsString)) == length nonterminalsString 
+    && Set.size (Set.fromList nonterminalsString) == length nonterminalsString 
     = Set.fromList nonterminalsString
     | otherwise = error "Error: Invalid nonterminals!" 
     where
@@ -136,12 +136,12 @@ getArrayNonterminals input
 
 -- Return true if String is Char symbol
 isChar :: String -> Bool
-isChar (char:[]) = True
+isChar [char] = True
 isChar str = False 
 
 -- Make Char from string or first Char is taken
 toChar :: String -> Char
-toChar (char:[]) = char
+toChar [char] = char
 
 -- Validate nonterminals to A-Z interval
 validateNonterminals :: [String] -> Bool
@@ -154,7 +154,7 @@ validateNonterminals (nonterminal:rest)
 getArrayTerminals :: String -> Set.Set Terminal
 getArrayTerminals input
     | validateTerminals terminals
-    && (Set.size (Set.fromList terminalsString)) == length terminalsString 
+    && Set.size (Set.fromList terminalsString) == length terminalsString 
     = Set.fromList terminalsString
     | otherwise = error "Error: Invalid terminals!" 
     where
@@ -171,7 +171,7 @@ validateTerminals (terminal:rest)
 -- Get origin nonterminal from string and Validate
 getOriginNonterminal :: String -> Set.Set Nonterminal-> Nonterminal
 getOriginNonterminal "" _ = error "Error: Missing Origin" 
-getOriginNonterminal (origin:[]) nonterminals
+getOriginNonterminal [origin] nonterminals
                     | Set.member origin nonterminals = origin
                     | otherwise = error "Error: Given origin is not in defined nonterminal set!"
 getOriginNonterminal other _ = error "Error: Invalid Origin" 
@@ -204,7 +204,7 @@ parseRuleLeft rule nonterminals
 parseRuleRight :: String -> Set.Set Nonterminal -> Set.Set Terminal -> String
 parseRuleRight rule nonterminals terminals 
     | length ruleSplit == 2 
-    && (checkElems right ((Set.toList nonterminals)++(Set.toList terminals)) || right == "#")
+    && (checkElems right (Set.toList nonterminals ++ Set.toList terminals) || right == "#")
     = right
     | otherwise = error ("Error: Invalid right side of rule " ++ show rule)
     where 
@@ -231,7 +231,7 @@ grammarAlgorithm1 grammar = Grammar{
 
 -- Filter rules by nonterminals in key set
 filterRulesBySymbols :: Set.Set Nonterminal -> Set.Set Rule -> Set.Set Rule
-filterRulesBySymbols keys rules = Set.fromList $ [ (left,right) | (left,right) <- Set.toList rules,
+filterRulesBySymbols keys rules = Set.fromList [ (left,right) | (left,right) <- Set.toList rules,
                         Set.member left keys, checkElems right (Set.toList keys) || right == "#"]
 
 -- Concatenate list of strings to one string
@@ -244,9 +244,9 @@ rulesToArrayOfStrings :: Set.Set Rule -> [String]
 rulesToArrayOfStrings rules = [[left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
 
 -- Get string from list of chars delimited with commas
-charArrToStringWithCommas :: [Char] -> String
+charArrToStringWithCommas :: String -> String
 charArrToStringWithCommas [] = []
-charArrToStringWithCommas [x] = [x] ++ "\n"
+charArrToStringWithCommas [x] = x:"\n"
 charArrToStringWithCommas (x:xs) = [x] ++ "," ++  charArrToStringWithCommas xs
 
 -- Make Nt set from TIN arlgorithm 4.1
@@ -274,10 +274,10 @@ isLanguageNotEmpty origin nonterminals
                             | Set.member origin nonterminals = True
                             | otherwise = False 
 
--- Check if elems of set are in other set
-checkElems :: [Char] -> [Char] -> Bool
+-- Check if elems of list are in other list
+checkElems :: String -> String -> Bool
 checkElems [] x = True
-checkElems (x:xs) yList = (elem x yList) && ( checkElems xs yList)
+checkElems (x:xs) yList = elem x yList && checkElems xs yList
 
 
 
@@ -306,7 +306,7 @@ makeSetVi viOld rules
             vi = Set.union (iterateByViElemsToMakeVi (Set.toList viOld) (Set.toList rules)) viOld
 
 -- Iterate by Vi elements to add symbols to Vi set
-iterateByViElemsToMakeVi :: [Char] -> [Rule]  -> Set.Set Char
+iterateByViElemsToMakeVi :: String -> [Rule]  -> Set.Set Char
 iterateByViElemsToMakeVi [] rules = Set.empty
 iterateByViElemsToMakeVi (viElem:rest) rules =
     Set.union (iterateByRulesToMakeVi viElem rules) (iterateByViElemsToMakeVi rest rules)
