@@ -16,7 +16,7 @@ main = do
     argv <- getArgs
     let file = getFileAndValidate argv
     input <- getInput file
-    let output = process (head argv) (parseByLines input)
+    let output = process (head argv) (parseByLinesAndValidate input)
     putStr $ grammarToString output
 
 
@@ -69,6 +69,8 @@ instance Show Grammar where
         "Origin:\n" ++ show grammarOrigin ++ "\n" ++
         "Rules:\n" ++ show grammarRules ++ "\n"
 
+
+
 -- Process data by given arguments
 process :: String -> [String] -> Grammar
 process arg input
@@ -91,9 +93,15 @@ parseGrammar (inNonteminals:inTerminals:inOrigin:inRules) = Grammar{
             origin = getOriginNonterminal inOrigin nonterminals
             rules = parseRules inRules nonterminals terminals
 
--- Make string array of lines
-parseByLines :: String -> [String]
-parseByLines input = lines (input)
+
+-- Make from string list of lines (strings) and test if input is atleast 3 lines long
+parseByLinesAndValidate :: String -> [String]
+parseByLinesAndValidate input 
+            | length inputLines >= 3 = inputLines
+            | otherwise = error "Error: Invalid input format!"
+            where
+                inputLines = lines (input)
+
 
 -- Get grammar string to print output format
 grammarToStringByElems :: Set.Set Nonterminal -> Set.Set Terminal -> Nonterminal -> Set.Set Rule
