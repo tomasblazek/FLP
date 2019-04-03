@@ -1,3 +1,6 @@
+# Název: simplify-bkg
+# Autor: Tomáš Blažek (xblaze31) 
+
 FILENAME = simplify-bkg
 ARCHIVENAME = flp-fun-xblaze31
 
@@ -7,7 +10,7 @@ build:
 	ghc --make $(FILENAME).hs
 
 run:
-	./$(FILENAME)
+	./$(FILENAME) -2
 
 clean:
 	rm *.hi *.o $(FILENAME)
