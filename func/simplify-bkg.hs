@@ -94,10 +94,10 @@ parseGrammar (inNonteminals:inTerminals:inOrigin:inRules) = Grammar{
             rules = parseRules inRules nonterminals terminals
 
 
--- Make from string list of lines (strings) and test if input is atleast 3 lines long
+-- Make from string list of lines (strings) and test if input is atleast 4 lines long
 parseByLinesAndValidate :: String -> [String]
 parseByLinesAndValidate input 
-            | length inputLines >= 3 = inputLines
+            | length inputLines >= 4 = inputLines
             | otherwise = error "Error: Invalid input format!"
             where
                 inputLines = lines input
