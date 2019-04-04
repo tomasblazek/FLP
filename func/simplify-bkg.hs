@@ -164,6 +164,7 @@ getArrayTerminals input
 -- Validate nonterminals to a-z interval
 validateTerminals :: [String] -> Bool
 validateTerminals [] = True
+validateTerminals [""] = True
 validateTerminals (terminal:rest) 
                     | isChar terminal && elem (toChar terminal) ['a'..'z'] = validateTerminals rest
                     | otherwise = False
@@ -243,9 +244,9 @@ listOfStringsToString (x:xs) = x ++ listOfStringsToString xs
 rulesToArrayOfStrings :: Set.Set Rule -> [String]
 rulesToArrayOfStrings rules = [[left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
 
--- Get string from list of chars delimited with commas
+-- Get string from list of chars delimited with commas with newline
 charArrToStringWithCommas :: String -> String
-charArrToStringWithCommas [] = []
+charArrToStringWithCommas [] = "\n"
 charArrToStringWithCommas [x] = x:"\n"
 charArrToStringWithCommas (x:xs) = [x] ++ "," ++  charArrToStringWithCommas xs
 
