@@ -153,7 +153,7 @@ validateNonterminals (nonterminal:rest)
 -- Get set of terminals from string and validate
 getArrayTerminals :: String -> Set.Set Terminal
 getArrayTerminals input
-    | validateTerminals terminals
+    | (validateTerminals terminals || terminals == [""]) 
     && Set.size (Set.fromList terminalsString) == length terminalsString 
     = Set.fromList terminalsString
     | otherwise = error "Error: Invalid terminals!" 
@@ -164,7 +164,6 @@ getArrayTerminals input
 -- Validate nonterminals to a-z interval
 validateTerminals :: [String] -> Bool
 validateTerminals [] = True
-validateTerminals [""] = True
 validateTerminals (terminal:rest) 
                     | isChar terminal && elem (toChar terminal) ['a'..'z'] = validateTerminals rest
                     | otherwise = False
