@@ -94,10 +94,10 @@ parseGrammar (inNonteminals:inTerminals:inOrigin:inRules) = Grammar{
             rules = parseRules inRules nonterminals terminals
 
 
--- Make from string list of lines (strings) and test if input is atleast 3 lines long
+-- Make from string list of lines (strings) and test if input is atleast 4 lines long
 parseByLinesAndValidate :: String -> [String]
 parseByLinesAndValidate input 
-            | length inputLines >= 3 = inputLines
+            | length inputLines >= 4 = inputLines
             | otherwise = error "Error: Invalid input format!"
             where
                 inputLines = lines input
@@ -153,7 +153,7 @@ validateNonterminals (nonterminal:rest)
 -- Get set of terminals from string and validate
 getArrayTerminals :: String -> Set.Set Terminal
 getArrayTerminals input
-    | validateTerminals terminals
+    | (validateTerminals terminals || terminals == [""]) 
     && Set.size (Set.fromList terminalsString) == length terminalsString 
     = Set.fromList terminalsString
     | otherwise = error "Error: Invalid terminals!" 
@@ -243,9 +243,9 @@ listOfStringsToString (x:xs) = x ++ listOfStringsToString xs
 rulesToArrayOfStrings :: Set.Set Rule -> [String]
 rulesToArrayOfStrings rules = [[left] ++ "->" ++ right ++ "\n" | (left, right) <- Set.toList rules]
 
--- Get string from list of chars delimited with commas
+-- Get string from list of chars delimited with commas with newline
 charArrToStringWithCommas :: String -> String
-charArrToStringWithCommas [] = []
+charArrToStringWithCommas [] = "\n"
 charArrToStringWithCommas [x] = x:"\n"
 charArrToStringWithCommas (x:xs) = [x] ++ "," ++  charArrToStringWithCommas xs
 
