@@ -284,12 +284,12 @@ solve_rubik_cube(  [[A1, A2, A3, A4, A5, A6, A7, A8, A9],
 						Maxdepth).
 
 
-solve_rubik_cube(Rubik, _, Steps, Maxdepth):-
+%solve_rubik_cube(Rubik, _, Steps, Maxdepth):-
 		
 
 
 
-solition_step
+%solition_step(Rubik, Rubik,)
 
 %%%%%%%%% Print %%%%%%%%%%%
 
