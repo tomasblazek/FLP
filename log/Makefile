@@ -4,7 +4,7 @@ all: build
 
 
 build:
-	swipl -q -o $(EXECUTABLE) -c $(EXECUTABLE).pl
+	swipl -g main -o $(EXECUTABLE) -c $(EXECUTABLE).pl
 
 
 clean:
